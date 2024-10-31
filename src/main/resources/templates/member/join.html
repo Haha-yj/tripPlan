@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 구글 리캡차 -->
+    <script src='https://www.google.com/recaptcha/api.js'></script>
 </head>
 <body>
 <div class="join">
@@ -37,10 +40,17 @@
             <div id="dup-userNickname" class="input-feedback"></div>
         </div>
 
+        <!-- reCAPTCHA v2 체크박스 -->
+        <div class="g-recaptcha" data-sitekey="6Lc8V3EqAAAAALD6kdapLnxWbFVadRmDNodLuRHd"></div>
+
+        <input type="hidden" id="gRecaptchaResponse" name="gRecaptchaResponse">
+
+        <button type="submit" class="primary-btn">저장</button><br>
+
         <!--완료를 누르면 회원가입 성공, 회원가입 정보를 가지고 로그인으로 돌아감-->
         <input id="submitBtn" type="submit" name="submitBtn" value="완료"/>
         <!--회원가입 취소, 아무것도 없이 로그인 페이지로 돌아감-->
-        <input type="button" onclick="location.href='/login'"  value="취소"/>
+        <input type="button" onclick="location.href='/login'" value="취소"/>
     </form>
 </div>
 
@@ -55,14 +65,17 @@ $(document).ready(function() {
             let str = $("#userId").val();
             var regExp = /^[0-9a-zA-Z]{4,10}$/;
        if (!regExp.test(str)) {
-        $("#dup-userId").text("아이디는 영문+숫자 4~10자입니다").css("color", "red");
+        $("#dup-userId").text("아이디는 영문,숫자 4~10자입니다").css("color", "red");
         isValidUserId = false;
         return;
+      } else {
+        $("#dup-userId").text("");
+        isValidUserId = true;
       }
 
 <!--아이디 중복 확인 후 안내 메시지 출력-->
     $.ajax({
-        url:`/checkJoin`, // 서버에서 아이디 중복 확인을 위한 url
+        url:`/join/0?str=${str}`, // 서버에서 아이디 중복 확인을 위한 url
         type:"GET",
         cache:false,
         data : { userId : str }, // 서버에 전달할 데이터
@@ -86,20 +99,23 @@ $(document).ready(function() {
         $("#dup-userNickname").text("닉네임은 2~8자 입니다").css("color", "red");
         isValidNickname = false;
         return;
+      } else {
+        $("#dup-userNickname").text("");
+        isValidNickname = true;
       }
 <!--닉네임 중복 확인 후 안내 메시지 출력-->
     $.ajax({
-        url:`/checkJoin`, // 서버에서 아이디 중복 확인을 위한 url
+        url:`/join/1?str={str}`, // 서버에서 아이디 중복 확인을 위한 url
         type:"GET",
         cache:false,
-        data : { userNick : str }, // 서버에 전달할 데이터
+        data : { userNickname : str }, // 서버에 전달할 데이터
         success : function(data){
           if (data.success) {
-            $("#dup-userNick").text("사용 가능한 닉네임입니다").css("color", "green");
-            isValidUserId = true;
+            $("#dup-userNickname").text("사용 가능한 닉네임입니다").css("color", "green");
+            isValidNickname = true;
           } else {
-            $("#dup-userNick").text(data.msg).css("color", "red");
-            isValidUserId = false;
+            $("#dup-userNickname").text(data.msg).css("color", "red");
+            isValidNickname = false;
           }
         }
       });
@@ -140,15 +156,15 @@ $(document).ready(function() {
 
 <!--회원가입 완료-->
       $("#submitBtn").click(function() {
-      if (!isValidUserId) {
+      if (isValidUserId = false) {
             alert("아이디를 확인해주세요");
             return;
             }
-      if (!isValidPassword) {
+      if (isValidPassword = false) {
             alert("비밀번호를 확인해주세요");
             return;
             }
-      if (!isValidNickname) {
+      if (isValidNickname = false) {
           alert("닉네임을 확인해주세요");
           return;
       }
@@ -165,23 +181,34 @@ $(document).ready(function() {
         url: `/checkJoinProc`,
         type:"POST",
         contentType: "application/json",
-        dataType: "json",
         data:JSON.stringify(data),
-        cache:false,
+        dataType: "json",
         success : function(data){
           if (data.success) {
             alert("회원가입 성공");
-            location.href = "/login"; // 회원가입 성공 시 로그인 페이지로 이동
+            location.href = "/login";
           } else {
             alert(data.msg);
           }
         },
-        error: function() {
-            alert("회원가입 중 오류가 발생했습니다.");
+        error: function(xhr, status, error) {
+            alert("회원가입 중 오류가 발생했습니다." + error);
         }
       });
    });
 });
+
+ // 폼 제출 클릭 시
+    document.getElementById('guestbookForm').addEventListener('submit', function(event) {
+        var recaptchaResponse = document.querySelector('.g-recaptcha-response').value;
+        if (!recaptchaResponse) {
+            alert("Please complete the reCAPTCHA.");
+            event.preventDefault();
+            return false;
+        }
+        document.getElementById('gRecaptchaResponse').value = recaptchaResponse;
+    });
 </script>
+<script src="/js/recaptcha.js" defer></script>
 </body>
 </html>
